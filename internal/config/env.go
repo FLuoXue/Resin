@@ -26,6 +26,7 @@ type EnvConfig struct {
 
 	// Ports
 	ResinPort       int
+	AdminPort       int
 	APIMaxBodyBytes int
 
 	// Core
@@ -95,6 +96,7 @@ func LoadEnvConfig() (*EnvConfig, error) {
 
 	// --- Ports ---
 	cfg.ResinPort = envInt("RESIN_PORT", 2260, &errs)
+	cfg.AdminPort = envInt("RESIN_ADMIN_PORT", 0, &errs)
 	cfg.APIMaxBodyBytes = envInt("RESIN_API_MAX_BODY_BYTES", 1<<20, &errs)
 
 	// --- Core ---
@@ -218,6 +220,12 @@ func LoadEnvConfig() (*EnvConfig, error) {
 	}
 
 	validatePort("RESIN_PORT", cfg.ResinPort, &errs)
+	if cfg.AdminPort != 0 {
+		validatePort("RESIN_ADMIN_PORT", cfg.AdminPort, &errs)
+		if cfg.AdminPort == cfg.ResinPort {
+			errs = append(errs, "RESIN_ADMIN_PORT must differ from RESIN_PORT")
+		}
+	}
 	validatePositive("RESIN_API_MAX_BODY_BYTES", cfg.APIMaxBodyBytes, &errs)
 
 	validatePositive("RESIN_MAX_LATENCY_TABLE_ENTRIES", cfg.MaxLatencyTableEntries, &errs)

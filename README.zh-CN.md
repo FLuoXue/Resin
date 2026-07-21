@@ -86,8 +86,10 @@ services:
       RESIN_PROXY_TOKEN: "my-token" # 修改为你的代理密码
       RESIN_LISTEN_ADDRESS: 0.0.0.0
       RESIN_PORT: 2260
+      RESIN_ADMIN_PORT: 2261
     ports:
       - "2260:2260"
+      - "2261:2261"
     volumes:
       - ./data/cache:/var/cache/resin
       - ./data/state:/var/lib/resin
@@ -95,10 +97,12 @@ services:
 ```
 运行 `docker compose up -d` 启动服务。
 
+`RESIN_PORT` 仅提供代理业务。设置 `RESIN_ADMIN_PORT` 后，WebUI、管理 API 和 `/healthz` 仅在该端口提供；不设置则保持原有单端口模式。
+
 *(如果你不想使用 Docker，请跳转文末查看 [其他部署方式](#其他部署方式))*
 
 ### 第二步：导入代理节点
-1. 浏览器打开 `http://127.0.0.1:2260`（请替换为你的服务器 IP）。
+1. 浏览器打开 `http://127.0.0.1:2261`（请替换为你的服务器 IP）。
 2. 输入刚才设置的 `RESIN_ADMIN_TOKEN` 登录后台。
 3. 在左侧菜单找到 **「订阅管理」**，添加你的节点订阅。
 4. 稍等片刻，等待节点池刷新出你的节点。
@@ -144,7 +148,7 @@ curl http://127.0.0.1:2260/my-token/./https/api.ipify.org
 ### 筛选节点
 如果你的服务对节点有筛选要求，例如只需要某个地区的节点，或者只需要来自某个订阅源的节点，或者只需要名字匹配特定正则表达式的节点，可以使用 Resin 的 Platform 概念来实现。
 
-你可以打开 `http://127.0.0.1:2260/ui/platforms` Platform 管理页面，创建一个 Platform。例如希望只使用来自美国、香港的节点，你可以创建一个名为 “MyPlatform” 的 Platform，然后在地区过滤规则中填入：
+你可以打开 `http://127.0.0.1:2261/ui/platforms` Platform 管理页面，创建一个 Platform。例如希望只使用来自美国、香港的节点，你可以创建一个名为 “MyPlatform” 的 Platform，然后在地区过滤规则中填入：
 ```
 us
 hk
@@ -293,6 +297,7 @@ RESIN_CACHE_DIR=./data/cache \
 RESIN_LOG_DIR=./data/log \
 RESIN_LISTEN_ADDRESS=0.0.0.0 \
 RESIN_PORT=2260 \
+RESIN_ADMIN_PORT=2261 \
 ./resin
 ```
 
@@ -307,6 +312,7 @@ RESIN_CACHE_DIR=./data/cache
 RESIN_LOG_DIR=./data/log
 RESIN_LISTEN_ADDRESS=0.0.0.0
 RESIN_PORT=2260
+RESIN_ADMIN_PORT=2261
 ```
 </details>
 
@@ -336,6 +342,7 @@ RESIN_CACHE_DIR=./data/cache \
 RESIN_LOG_DIR=./data/log \
 RESIN_LISTEN_ADDRESS=127.0.0.1 \
 RESIN_PORT=2260 \
+RESIN_ADMIN_PORT=2261 \
 ./resin
 ```
 </details>

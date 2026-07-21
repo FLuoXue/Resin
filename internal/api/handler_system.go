@@ -14,6 +14,7 @@ type systemEnvConfigResponse struct {
 	LogDir                                          string          `json:"log_dir"`
 	ListenAddress                                   string          `json:"listen_address"`
 	ResinPort                                       int             `json:"resin_port"`
+	AdminPort                                       int             `json:"admin_port"`
 	APIMaxBodyBytes                                 int             `json:"api_max_body_bytes"`
 	MaxLatencyTableEntries                          int             `json:"max_latency_table_entries"`
 	ProbeConcurrency                                int             `json:"probe_concurrency"`
@@ -113,6 +114,7 @@ func systemEnvConfigSnapshot(envCfg *config.EnvConfig) *systemEnvConfigResponse 
 		LogDir:                                envCfg.LogDir,
 		ListenAddress:                         envCfg.ListenAddress,
 		ResinPort:                             envCfg.ResinPort,
+		AdminPort:                             envCfg.AdminPort,
 		APIMaxBodyBytes:                       envCfg.APIMaxBodyBytes,
 		MaxLatencyTableEntries:                envCfg.MaxLatencyTableEntries,
 		ProbeConcurrency:                      envCfg.ProbeConcurrency,

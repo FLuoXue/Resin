@@ -46,6 +46,8 @@ type resinApp struct {
 		Shutdown(context.Context) error
 	}
 	inboundLn     net.Listener
+	adminSrv      *http.Server
+	adminLn       net.Listener
 	transportPool *proxy.OutboundTransportPool
 }
 
@@ -393,9 +395,13 @@ func (a *resinApp) buildNetworkServers(engine *state.StateEngine) error {
 		MatcherRuntime: a.accountMatcher,
 	}
 
+	apiPort := a.envCfg.ResinPort
+	if a.envCfg.AdminPort != 0 {
+		apiPort = a.envCfg.AdminPort
+	}
 	apiSrv := api.NewServerWithAddress(
 		a.envCfg.ListenAddress,
-		a.envCfg.ResinPort,
+		apiPort,
 		a.envCfg.AdminToken,
 		systemInfo,
 		a.runtimeCfg,
@@ -459,11 +465,15 @@ func (a *resinApp) buildNetworkServers(engine *state.StateEngine) error {
 		ProxyBypassRules: a.envCfg.ProxyBypassRules,
 	})
 
+	controlPlaneHandler := apiSrv.Handler()
+	if a.envCfg.AdminPort != 0 {
+		controlPlaneHandler = http.NotFoundHandler()
+	}
 	inboundHandler := newInboundMux(
 		a.envCfg.ProxyToken,
 		forwardProxy,
 		reverseProxy,
-		apiSrv.Handler(),
+		controlPlaneHandler,
 		tokenActionHandler,
 	)
 	inboundLn, err := net.Listen("tcp", formatListenAddress(a.envCfg.ListenAddress, a.envCfg.ResinPort))
@@ -472,6 +482,15 @@ func (a *resinApp) buildNetworkServers(engine *state.StateEngine) error {
 	}
 	a.inboundLn = proxy.NewCountingListener(inboundLn, a.metricsManager)
 	a.inboundSrv = newInboundDemuxServer(&http.Server{Handler: inboundHandler}, socks5Inbound)
+	if a.envCfg.AdminPort != 0 {
+		adminLn, err := net.Listen("tcp", formatListenAddress(a.envCfg.ListenAddress, a.envCfg.AdminPort))
+		if err != nil {
+			_ = a.inboundLn.Close()
+			return fmt.Errorf("resin admin server listen: %w", err)
+		}
+		a.adminLn = adminLn
+		a.adminSrv = &http.Server{Handler: apiSrv.Handler()}
+	}
 
 	return nil
 }
@@ -503,7 +522,7 @@ func (a *resinApp) buildProxyEvents() proxy.ConfigAwareEventEmitter {
 }
 
 func (a *resinApp) startServers() <-chan error {
-	serverErrCh := make(chan error, 1)
+	serverErrCh := make(chan error, 2)
 	reportServerErr := func(name string, err error) {
 		if err == nil || errors.Is(err, http.ErrServerClosed) {
 			return
@@ -523,6 +542,12 @@ func (a *resinApp) startServers() <-chan error {
 		)
 		reportServerErr("resin server", a.inboundSrv.Serve(a.inboundLn))
 	}()
+	if a.adminSrv != nil && a.adminLn != nil {
+		go func() {
+			log.Printf("Resin admin server starting on %s", formatListenAddress(a.envCfg.ListenAddress, a.envCfg.AdminPort))
+			reportServerErr("resin admin server", a.adminSrv.Serve(a.adminLn))
+		}()
+	}
 
 	return serverErrCh
 }
@@ -555,6 +580,12 @@ func (a *resinApp) shutdown(ctx context.Context) {
 		log.Printf("Server shutdown error: %v", err)
 	}
 	log.Println("Resin server stopped")
+	if a.adminSrv != nil {
+		if err := a.adminSrv.Shutdown(ctx); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("Admin server shutdown error: %v", err)
+		}
+		log.Println("Resin admin server stopped")
+	}
 	if a.transportPool != nil {
 		a.transportPool.CloseAll()
 		log.Println("Outbound transport pool closed")

@@ -86,8 +86,10 @@ services:
       RESIN_PROXY_TOKEN: "my-token" # Change to your proxy password
       RESIN_LISTEN_ADDRESS: 0.0.0.0
       RESIN_PORT: 2260
+      RESIN_ADMIN_PORT: 2261
     ports:
       - "2260:2260"
+      - "2261:2261"
     volumes:
       - ./data/cache:/var/cache/resin
       - ./data/state:/var/lib/resin
@@ -96,11 +98,13 @@ services:
 
 Run `docker compose up -d` to start the service.
 
+`RESIN_PORT` serves proxy traffic. With `RESIN_ADMIN_PORT` set, WebUI, management API, and `/healthz` are available only on that port; omit it to retain the legacy single-port mode.
+
 *(If you don't want Docker, jump to [Other Deployment Options](#other-deployment-options).)*
 
 ### Step 2: Import proxy nodes
 
-1. Open `http://127.0.0.1:2260` in your browser (replace with your server IP if needed).
+1. Open `http://127.0.0.1:2261` in your browser (replace with your server IP if needed).
 2. Log in with the `RESIN_ADMIN_TOKEN` you set.
 3. Go to **Subscriptions** in the left menu and add your node subscription.
 4. Wait briefly for the node pool to refresh.
@@ -151,7 +155,7 @@ curl http://127.0.0.1:2260/my-token/./https/api.ipify.org
 
 If your service needs specific nodes (for example by region, subscription source, or name regex), use Resin's Platform feature.
 
-Open `http://127.0.0.1:2260/ui/platforms` and create a Platform. For example, to use only US and HK nodes, create `MyPlatform` and set region filters to:
+Open `http://127.0.0.1:2261/ui/platforms` and create a Platform. For example, to use only US and HK nodes, create `MyPlatform` and set region filters to:
 
 ```
 us
@@ -307,6 +311,7 @@ RESIN_CACHE_DIR=./data/cache \
 RESIN_LOG_DIR=./data/log \
 RESIN_LISTEN_ADDRESS=0.0.0.0 \
 RESIN_PORT=2260 \
+RESIN_ADMIN_PORT=2261 \
 ./resin
 ```
 
@@ -321,6 +326,7 @@ RESIN_CACHE_DIR=./data/cache
 RESIN_LOG_DIR=./data/log
 RESIN_LISTEN_ADDRESS=0.0.0.0
 RESIN_PORT=2260
+RESIN_ADMIN_PORT=2261
 ```
 </details>
 
@@ -350,6 +356,7 @@ RESIN_CACHE_DIR=./data/cache \
 RESIN_LOG_DIR=./data/log \
 RESIN_LISTEN_ADDRESS=127.0.0.1 \
 RESIN_PORT=2260 \
+RESIN_ADMIN_PORT=2261 \
 ./resin
 ```
 </details>

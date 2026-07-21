@@ -22,6 +22,7 @@ func newTestServer() *Server {
 		LogDir:                                "/tmp/resin/log",
 		ListenAddress:                         "127.0.0.1",
 		ResinPort:                             2260,
+		AdminPort:                             2261,
 		APIMaxBodyBytes:                       1 << 20,
 		MaxLatencyTableEntries:                12,
 		ProbeConcurrency:                      1000,
@@ -305,6 +306,9 @@ func TestSystemEnvConfig_OK(t *testing.T) {
 	}
 	if body["listen_address"] != "127.0.0.1" {
 		t.Errorf("listen_address: got %q, want %q", body["listen_address"], "127.0.0.1")
+	}
+	if body["admin_port"] != float64(2261) {
+		t.Errorf("admin_port: got %v, want 2261", body["admin_port"])
 	}
 	if body["default_platform_sticky_ttl"] != "168h0m0s" {
 		t.Errorf("default_platform_sticky_ttl: got %q, want %q", body["default_platform_sticky_ttl"], "168h0m0s")

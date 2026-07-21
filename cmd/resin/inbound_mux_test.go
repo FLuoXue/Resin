@@ -101,6 +101,27 @@ func TestInboundMux_RoutesAPIForControlPlanePaths(t *testing.T) {
 	}
 }
 
+func TestInboundMux_ControlPlaneCanBeDisabledForSeparateAdminPort(t *testing.T) {
+	mux := newInboundMux(
+		"tok",
+		tagHandler("forward", http.StatusOK),
+		tagHandler("reverse", http.StatusOK),
+		http.NotFoundHandler(),
+		tagHandler("token-action", http.StatusOK),
+	)
+
+	for _, path := range []string{"/", "/healthz", "/api/v1/system/info", "/ui/"} {
+		t.Run(path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			rec := httptest.NewRecorder()
+			mux.ServeHTTP(rec, req)
+			if rec.Code != http.StatusNotFound {
+				t.Fatalf("status: got %d, want %d", rec.Code, http.StatusNotFound)
+			}
+		})
+	}
+}
+
 func TestInboundMux_RoutesReverseForNonControlPlanePaths(t *testing.T) {
 	mux := newInboundMux(
 		"tok",

@@ -40,6 +40,7 @@ func TestLoadEnvConfig_Defaults(t *testing.T) {
 
 	// Ports
 	assertEqual(t, "ResinPort", cfg.ResinPort, 2260)
+	assertEqual(t, "AdminPort", cfg.AdminPort, 0)
 	assertEqual(t, "APIMaxBodyBytes", cfg.APIMaxBodyBytes, 1<<20)
 
 	// Core
@@ -101,6 +102,7 @@ func TestLoadEnvConfig_EnvOverrides(t *testing.T) {
 	envs["RESIN_CACHE_DIR"] = "/tmp/cache"
 	envs["RESIN_LISTEN_ADDRESS"] = "127.0.0.1"
 	envs["RESIN_PORT"] = "8080"
+	envs["RESIN_ADMIN_PORT"] = "8081"
 	envs["RESIN_API_MAX_BODY_BYTES"] = "2097152"
 	envs["RESIN_PROBE_CONCURRENCY"] = "500"
 	envs["RESIN_GEOIP_UPDATE_SCHEDULE"] = "0 0 * * *"
@@ -129,6 +131,7 @@ func TestLoadEnvConfig_EnvOverrides(t *testing.T) {
 	assertEqual(t, "CacheDir", cfg.CacheDir, "/tmp/cache")
 	assertEqual(t, "ListenAddress", cfg.ListenAddress, "127.0.0.1")
 	assertEqual(t, "ResinPort", cfg.ResinPort, 8080)
+	assertEqual(t, "AdminPort", cfg.AdminPort, 8081)
 	assertEqual(t, "APIMaxBodyBytes", cfg.APIMaxBodyBytes, 2097152)
 	assertEqual(t, "ProbeConcurrency", cfg.ProbeConcurrency, 500)
 	assertEqual(t, "GeoIPUpdateSchedule", cfg.GeoIPUpdateSchedule, "0 0 * * *")
@@ -427,6 +430,31 @@ func TestLoadEnvConfig_ZeroPort(t *testing.T) {
 		t.Fatal("expected error for zero port")
 	}
 	assertContains(t, err.Error(), "RESIN_PORT")
+}
+
+func TestLoadEnvConfig_InvalidAdminPort(t *testing.T) {
+	envs := requiredEnvs()
+	envs["RESIN_ADMIN_PORT"] = "99999"
+	setEnvs(t, envs)
+
+	_, err := LoadEnvConfig()
+	if err == nil {
+		t.Fatal("expected error for admin port out of range")
+	}
+	assertContains(t, err.Error(), "RESIN_ADMIN_PORT")
+}
+
+func TestLoadEnvConfig_AdminPortMustDifferFromResinPort(t *testing.T) {
+	envs := requiredEnvs()
+	envs["RESIN_PORT"] = "8080"
+	envs["RESIN_ADMIN_PORT"] = "8080"
+	setEnvs(t, envs)
+
+	_, err := LoadEnvConfig()
+	if err == nil {
+		t.Fatal("expected error when admin and resin ports are equal")
+	}
+	assertContains(t, err.Error(), "RESIN_ADMIN_PORT must differ")
 }
 
 func TestLoadEnvConfig_InvalidAPIMaxBodyBytes(t *testing.T) {
